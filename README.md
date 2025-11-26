@@ -1,3 +1,4 @@
+
 # alpha-video-cli-web-helper
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-FFD632.svg)](https://opensource.org/licenses/MIT)
@@ -37,6 +38,7 @@ This web helper solves that by analyzing your local files client-side and constr
 - **Drag & Drop Analysis:** Instantly reads a folder to find PNG sequences.
 - **Pattern Detection:** Automatically determines the `printf` style pattern (e.g., `%05d`) and start/end frame numbers.
 - **FPS Auto-Detection:** Infers the likely frame rate (30, 60, 50, 24) based on the total frame count.
+- **Transparency Verification:** Automatically scans source frames to verify they contain an alpha channel, preventing accidental encoding of opaque videos.
 - **Live Preview:** Plays the animation loop in a canvas to verify continuity before encoding.
 - **Smart Defaults:** Pre-configures quality settings (WebM: 50, HEVC: 90) to match the CLI defaults.
 - **One-Click Copy:** Generates a ready-to-run terminal command.
@@ -87,9 +89,9 @@ To install the CLI:
 
 ```bash
 npm install -g @rethink-js/alpha-video-cli
-```
+````
 
----
+-----
 
 ## 7\. License
 
@@ -97,6 +99,6 @@ MIT License
 
 GitHub: [https://github.com/Rethink-JS/alpha-video-cli-web-helper](https://github.com/Rethink-JS/alpha-video-cli-web-helper)
 
----
+-----
 
 by [**Rethink JS**](https://github.com/Rethink-JS)

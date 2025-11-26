@@ -206,6 +206,37 @@
           </div>
         </div>
 
+        <div
+          id="alphaWarning"
+          class="hidden bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3 animate-fade-in"
+        >
+          <div class="text-amber-500 shrink-0 mt-0.5">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-amber-500 font-semibold text-sm">
+              No Transparency Detected
+            </h3>
+            <p class="text-amber-500/80 text-xs mt-1 leading-relaxed">
+              The detected files appear to be opaque (no alpha channel). The
+              generated video will <strong>not be transparent</strong>.
+              <br />Please verify your export settings (ensure "Millions of
+              Colors+" or "RGBA" is selected).
+            </p>
+          </div>
+        </div>
+
         <section class="space-y-5">
           <div class="flex items-center gap-2 mb-2">
             <span
@@ -731,7 +762,6 @@
         document.getElementById(id).addEventListener("input", generate);
       });
 
-      // Updated for Specific Defaults (50 / 90)
       function updateSliderLabel(id, valDisplayId, defaultVal) {
         const el = document.getElementById(id);
         const val = parseInt(el.value);
@@ -765,7 +795,6 @@
       }
 
       function generate() {
-        // Update UI Labels looking for defaults 50 and 90
         updateSliderLabel("webmQuality", "webmVal", 50);
         updateSliderLabel("hevcQuality", "hevcVal", 90);
         calculateDuration();
@@ -791,15 +820,12 @@
         if (outputPath) cmd.push(`--output "${outputPath}"`);
         if (pattern) cmd.push(`--pattern "${pattern}"`);
 
-        // Only add start if it's explicitly non-zero (since detection infers 0 usually)
-        // or if user manually changed it.
         if (startNum !== "" && startNum !== "0")
           cmd.push(`--start ${startNum}`);
         if (endNum !== "") cmd.push(`--end ${endNum}`);
 
         if (baseName) cmd.push(`--name "${baseName}"`);
 
-        // Omit flags if they match the defaults (50 and 90)
         if (webmQ !== 50) cmd.push(`--webm-quality ${webmQ}`);
         if (hevcQ !== 90) cmd.push(`--hevc-quality ${hevcQ}`);
 
@@ -834,12 +860,13 @@
       const folderInput = document.getElementById("folderInput");
       const analysisResult = document.getElementById("analysisResult");
       const analysisText = document.getElementById("analysisText");
+      const alphaWarning = document.getElementById("alphaWarning");
 
       // Preview Globals
-      let filesDictionary = {}; // Map: "Frame_001.png" -> File Object
+      let filesDictionary = {};
       let animationId = null;
       let isPlaying = false;
-      let currentFrameIndex = 0; // Tracks playhead position
+      let currentFrameIndex = 0;
 
       // Click Handler
       function triggerFileSelect() {
@@ -856,7 +883,6 @@
         const parts = relativePath.split("/");
         const folderName = parts.length > 1 ? parts[0] : "frames";
 
-        // Convert array to dictionary for preview, store only PNGs
         filesDictionary = {};
         const pngFiles = [];
 
@@ -919,7 +945,6 @@
             if (entries.length === 0) {
               processFiles(pngFiles, dirEntry.name);
             } else {
-              // Need to process these entries to get actual File objects
               let processedCount = 0;
               const totalInBatch = entries.length;
 
@@ -943,6 +968,38 @@
         readBatch();
       }
 
+      // New Function: Check for Alpha Channel
+      function checkTransparency(file) {
+        return new Promise((resolve) => {
+          const img = new Image();
+          const url = URL.createObjectURL(file);
+          img.onload = () => {
+            // Create small offscreen canvas
+            const c = document.createElement("canvas");
+            c.width = img.width;
+            c.height = img.height;
+            const ctx = c.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, c.width, c.height).data;
+            let hasAlpha = false;
+
+            // Check alpha channel (every 4th byte).
+            // Optimization: Stride by 4 pixels (16 bytes) to speed up large files
+            for (let i = 3; i < imageData.length; i += 16) {
+              if (imageData[i] < 255) {
+                hasAlpha = true;
+                break;
+              }
+            }
+
+            URL.revokeObjectURL(url);
+            resolve(hasAlpha);
+          };
+          img.src = url;
+        });
+      }
+
       function detectFPS(total) {
         const candidates = [60, 50, 48, 30, 25, 24];
         for (let fps of candidates) {
@@ -953,7 +1010,7 @@
         return null;
       }
 
-      function processFiles(files, folderName) {
+      async function processFiles(files, folderName) {
         if (files.length === 0) {
           alert("No PNG files found in this folder.");
           return;
@@ -962,6 +1019,15 @@
         files.sort();
         const totalFrames = files.length;
         const firstFile = files[0];
+
+        // Check transparency of the first file
+        const firstFileObj = filesDictionary[firstFile];
+        if (firstFileObj) {
+          const hasAlpha = await checkTransparency(firstFileObj);
+          if (!hasAlpha) {
+            alphaWarning.classList.remove("hidden");
+          }
+        }
 
         // 1. Detect Pattern
         const match = firstFile.match(/^(.*?)(\d+)\.png$/i);
@@ -985,7 +1051,6 @@
           document.getElementById("endNum").value = endN;
           document.getElementById("endAutoBadge").classList.remove("opacity-0");
 
-          // Initialize playhead
           currentFrameIndex = startN;
         }
 
@@ -1019,6 +1084,7 @@
         stopPreview();
         filesDictionary = {};
         analysisResult.classList.add("hidden");
+        alphaWarning.classList.add("hidden"); // Hide warning on reset
         document.getElementById("patternAutoBadge").classList.add("opacity-0");
         document.getElementById("startAutoBadge").classList.add("opacity-0");
         document.getElementById("endAutoBadge").classList.add("opacity-0");
@@ -1068,14 +1134,12 @@
           .classList.add("bg-slate-600");
         document.getElementById("previewStatusText").innerText = "Idle";
 
-        // Disable button
         document.getElementById("playPauseBtn").disabled = true;
         document.getElementById("playIcon").classList.add("hidden");
         document.getElementById("pauseIcon").classList.add("hidden");
       }
 
       function startPreview() {
-        // Reset overlay and status
         document.getElementById("previewOverlay").classList.add("hidden");
         document
           .getElementById("previewStatusDot")
@@ -1084,11 +1148,9 @@
           .getElementById("previewStatusDot")
           .classList.add("bg-green-500");
 
-        // Set Initial State
         isPlaying = true;
         updatePlayPauseIcon(true);
 
-        // Sync currentFrameIndex with Start input
         const startNum =
           parseInt(document.getElementById("startNum").value) || 0;
         currentFrameIndex = startNum;
@@ -1102,7 +1164,6 @@
         function animate() {
           animationId = requestAnimationFrame(animate);
 
-          // If paused, skip drawing but keep loop alive (or could cancel frame)
           if (!isPlaying) return;
 
           const fps = parseInt(document.getElementById("fps").value) || 30;
@@ -1118,7 +1179,6 @@
           if (elapsed > interval) {
             then = now - (elapsed % interval);
 
-            // Logic to loop
             if (currentFrameIndex > endNum) currentFrameIndex = startNum;
 
             document.getElementById(
