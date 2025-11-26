@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Command Generator · rt-alpha-video</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            colors: {
+              slate: {
+                850: "#151e2e",
+                900: "#0f172a",
+                950: "#020617",
+              },
+              brand: {
+                DEFAULT: "#FFD632", // Rethink JS Brand Color
+                dim: "#b39005", // Darker shade for accents
+                glow: "rgba(255, 214, 50, 0.15)",
+              },
+            },
+            animation: {
+              "pulse-fast": "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      /* Custom range slider styling matching brand color */
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
+        background: #ffd632;
+        cursor: pointer;
+        margin-top: -6px;
+        box-shadow: 0 0 10px rgba(255, 214, 50, 0.5);
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        cursor: pointer;
+        background: #334155;
+        border-radius: 2px;
+      }
+      .drag-active {
+        border-color: #ffd632 !important;
+        background-color: rgba(255, 214, 50, 0.05) !important;
+      }
+      .selection-brand::selection {
+        background-color: rgba(255, 214, 50, 0.3);
+        color: #fff;
+      }
+      .rotate-180 {
+        transform: rotate(180deg);
+      }
+      /* Canvas checkerboard background for alpha transparency */
+      .canvas-bg {
+        background-color: #0f172a;
+        background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%),
+          linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #1e293b 75%),
+          linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+        background-size: 20px 20px;
+        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-950 text-slate-300 min-h-screen flex flex-col font-sans selection-brand"
+  >
+    <header
+      class="border-b border-slate-800 bg-slate-950/50 backdrop-blur-md sticky top-0 z-20"
+    >
+      <div
+        class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <img
+            src="https://avatars.githubusercontent.com/u/245584241?s=256"
+            alt="Rethink JS Logo"
+            class="w-8 h-8 rounded-lg border border-slate-700"
+          />
+          <h1 class="font-semibold text-slate-100 tracking-tight">
+            alpha-video-cli
+            <span class="text-slate-500 font-normal ml-1">Command Gen</span>
+          </h1>
+        </div>
+
+        <a
+          href="https://github.com/Rethink-JS/alpha-video-cli"
+          target="_blank"
+          class="flex items-center gap-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-full transition-colors group"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            class="w-4 h-4 fill-current group-hover:text-brand transition-colors"
+          >
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M12 2C6.477 2 2 6.463 2 11.97c0 4.404 2.865 8.14 6.839 9.458.5.092.682-.216.682-.48 0-.236-.008-.864-.013-1.695-2.782.602-3.369-1.337-3.369-1.337-.454-1.151-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.398.1 2.651.64.699 1.028 1.597 1.028 2.688 0 3.848-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.577.688.48 3.97-1.32 6.833-5.054 6.833-9.458C22 6.463 17.522 2 12 2z"
+            ></path>
+          </svg>
+          <span>View on GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <main
+      class="flex-1 max-w-5xl mx-auto px-6 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-10"
+    >
+      <div class="lg:col-span-7 space-y-6">
+        <div
+          id="dropZone"
+          onclick="triggerFileSelect()"
+          class="relative group border-2 border-dashed border-slate-700 bg-slate-900/30 rounded-2xl p-8 text-center transition-all duration-200 cursor-pointer hover:border-brand hover:bg-slate-900/50 hover:shadow-[0_0_20px_-5px_rgba(255,214,50,0.1)]"
+        >
+          <input
+            type="file"
+            id="folderInput"
+            webkitdirectory
+            directory
+            multiple
+            class="hidden"
+          />
+
+          <div class="pointer-events-none space-y-3">
+            <div
+              class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center mx-auto text-brand group-hover:scale-110 transition-transform duration-200 group-hover:bg-brand/10"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3
+                class="text-slate-200 font-medium group-hover:text-brand transition-colors"
+              >
+                Click to select folder
+                <span
+                  class="text-slate-500 font-normal group-hover:text-brand/70"
+                  >or drop it here</span
+                >
+              </h3>
+              <p class="text-slate-500 text-sm mt-1">
+                We'll auto-detect pattern, start/end, fps, and base name.
+              </p>
+            </div>
+          </div>
+
+          <div
+            id="analysisResult"
+            class="hidden absolute inset-0 bg-slate-900 rounded-2xl flex flex-col items-center justify-center z-10 p-6 cursor-default"
+            onclick="event.stopPropagation()"
+          >
+            <div class="text-brand mb-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div class="text-sm font-medium text-slate-200" id="analysisText">
+              Analysis Complete
+            </div>
+            <button
+              onclick="resetDrop()"
+              class="mt-3 text-xs text-slate-500 hover:text-brand underline transition-colors"
+            >
+              Reset / Select Different Folder
+            </button>
+          </div>
+        </div>
+
+        <section class="space-y-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span
+              class="w-2 h-2 rounded-full bg-brand shadow-[0_0_8px_rgba(255,214,50,0.6)]"
+            ></span>
+            <h2
+              class="text-sm font-bold text-slate-100 uppercase tracking-wider"
+            >
+              Basic Settings
+            </h2>
+          </div>
+
+          <div class="grid gap-6">
+            <div class="space-y-2">
+              <label
+                class="block text-sm font-medium text-slate-400 flex justify-between"
+              >
+                Input Folder Path
+                <span
+                  class="text-[10px] text-amber-500 uppercase tracking-wider font-bold hidden"
+                  id="pathWarning"
+                  >⚠ Verify Full Path</span
+                >
+              </label>
+              <input
+                type="text"
+                id="inputPath"
+                placeholder="./frames/sequence"
+                class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:border-brand/70 focus:ring-1 focus:ring-brand/70 transition-all font-mono text-sm placeholder:text-slate-700"
+              />
+
+              <div
+                class="flex items-start gap-2 mt-1.5 p-2 rounded bg-slate-900/50 border border-slate-800/50"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 text-brand shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                  <span class="font-semibold text-slate-400"
+                    >Path Verification:</span
+                  >
+                  Due to browser security restrictions, we can only detect the
+                  folder name (e.g.,
+                  <span class="font-mono text-xs text-slate-400">./frames</span
+                  >), not the absolute path on your disk. Please ensure this
+                  matches your actual project structure.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2 relative">
+                <label
+                  class="block text-sm font-medium text-slate-400 flex justify-between"
+                >
+                  File Pattern
+                  <span
+                    class="text-[10px] text-brand uppercase font-bold tracking-wider opacity-0 transition-opacity"
+                    id="patternAutoBadge"
+                    >Auto-detected</span
+                  >
+                </label>
+                <input
+                  type="text"
+                  id="pattern"
+                  placeholder="Frame_%05d.png"
+                  class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-brand/70 transition-all font-mono text-sm"
+                />
+              </div>
+
+              <div class="space-y-2 relative">
+                <label
+                  class="block text-sm font-medium text-slate-400 flex justify-between"
+                >
+                  FPS
+                  <div>
+                    <span
+                      class="text-[10px] text-brand uppercase font-bold tracking-wider opacity-0 transition-opacity mr-2"
+                      id="fpsAutoBadge"
+                      >Auto-detected</span
+                    >
+                    <span
+                      id="durationEst"
+                      class="text-xs text-slate-500 font-mono"
+                    ></span>
+                  </div>
+                </label>
+                <input
+                  type="number"
+                  id="fps"
+                  placeholder="30"
+                  value="30"
+                  class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-brand/70 transition-all font-mono text-sm"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label
+                  class="block text-sm font-medium text-slate-400 flex justify-between"
+                >
+                  Start Number
+                  <span
+                    class="text-[10px] text-brand uppercase font-bold tracking-wider opacity-0 transition-opacity"
+                    id="startAutoBadge"
+                    >Auto-detected</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="startNum"
+                  placeholder="0"
+                  class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-brand/70 transition-all font-mono text-sm"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <label
+                  class="block text-sm font-medium text-slate-400 flex justify-between"
+                >
+                  End Number
+                  <span
+                    class="text-[10px] text-brand uppercase font-bold tracking-wider opacity-0 transition-opacity"
+                    id="endAutoBadge"
+                    >Auto-detected</span
+                  >
+                </label>
+                <input
+                  type="number"
+                  id="endNum"
+                  placeholder="100"
+                  class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-brand/70 transition-all font-mono text-sm"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="border border-slate-800 rounded-xl overflow-hidden bg-slate-900/20"
+        >
+          <button
+            onclick="toggleAdvanced()"
+            class="w-full flex items-center justify-between p-4 bg-slate-900/40 hover:bg-slate-900/60 transition-colors text-left group"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-brand transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
+                </svg>
+              </div>
+              <span
+                class="text-sm font-semibold text-slate-300 group-hover:text-white"
+                >Advanced Settings</span
+              >
+            </div>
+            <svg
+              id="advancedIcon"
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 text-slate-500 transition-transform duration-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+
+          <div
+            id="advancedOptions"
+            class="hidden border-t border-slate-800 p-6 space-y-6"
+          >
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-400"
+                  >Output Folder</label
+                >
+                <input
+                  type="text"
+                  id="outputPath"
+                  placeholder="./dist"
+                  class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-brand/70 transition-all font-mono text-sm"
+                />
+              </div>
+              <div class="space-y-2 relative">
+                <label
+                  class="block text-sm font-medium text-slate-400 flex justify-between"
+                >
+                  Base Name
+                  <span
+                    class="text-[10px] text-brand uppercase font-bold tracking-wider opacity-0 transition-opacity"
+                    id="nameAutoBadge"
+                    >Auto-filled</span
+                  >
+                </label>
+                <input
+                  type="text"
+                  id="baseName"
+                  placeholder="my-video"
+                  class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-brand/70 transition-all font-mono text-sm"
+                />
+              </div>
+            </div>
+
+            <div
+              class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-6"
+            >
+              <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <label class="text-sm font-medium text-slate-300"
+                    >WebM Quality</label
+                  >
+                  <span
+                    class="text-xs font-mono text-brand bg-brand/10 px-2 py-0.5 rounded border border-brand/20"
+                    id="webmVal"
+                    >Default (50)</span
+                  >
+                </div>
+                <input
+                  type="range"
+                  id="webmQuality"
+                  min="1"
+                  max="100"
+                  value="50"
+                  class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+
+              <div class="h-px bg-slate-800 w-full"></div>
+
+              <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <label class="text-sm font-medium text-slate-300"
+                    >HEVC Quality (Alpha)</label
+                  >
+                  <span
+                    class="text-xs font-mono text-brand bg-brand/10 px-2 py-0.5 rounded border border-brand/20"
+                    id="hevcVal"
+                    >Default (90)</span
+                  >
+                </div>
+                <input
+                  type="range"
+                  id="hevcQuality"
+                  min="1"
+                  max="100"
+                  value="90"
+                  class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div
+                class="p-3 rounded-lg border border-slate-800/50 hover:bg-slate-900/50 transition-colors"
+              >
+                <div class="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="noHevc"
+                    class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-brand focus:ring-brand focus:ring-offset-slate-900"
+                  />
+                  <label
+                    for="noHevc"
+                    class="text-sm text-slate-400 select-none cursor-pointer"
+                  >
+                    Skip HEVC Encoding
+                    <span class="text-slate-600 ml-1">(--no-hevc)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div
+                class="p-3 rounded-lg border border-slate-800/50 hover:bg-slate-900/50 transition-colors"
+              >
+                <div class="flex items-center gap-3 mb-1">
+                  <input
+                    type="checkbox"
+                    id="quietMode"
+                    class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-brand focus:ring-brand focus:ring-offset-slate-900"
+                  />
+                  <label
+                    for="quietMode"
+                    class="text-sm text-slate-400 select-none cursor-pointer"
+                  >
+                    Quiet Mode
+                    <span class="text-slate-600 ml-1">(--quiet)</span>
+                  </label>
+                </div>
+                <p class="text-[10px] text-slate-500 ml-7">
+                  Suppress progress bars and extra logs.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="lg:col-span-5 relative">
+        <div class="sticky top-24 space-y-8">
+          <div class="space-y-4">
+            <div
+              class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-2xl shadow-black/50"
+            >
+              <div
+                class="bg-slate-850 px-4 py-3 border-b border-slate-800 flex items-center justify-between"
+              >
+                <div class="flex gap-1.5">
+                  <div class="w-3 h-3 rounded-full bg-slate-700"></div>
+                  <div class="w-3 h-3 rounded-full bg-slate-700"></div>
+                  <div class="w-3 h-3 rounded-full bg-slate-700"></div>
+                </div>
+                <span class="text-xs font-mono text-slate-500">terminal</span>
+              </div>
+
+              <div class="p-4">
+                <div class="relative group">
+                  <code
+                    id="cmdOutput"
+                    class="block font-mono text-sm leading-relaxed text-brand break-all whitespace-pre-wrap min-h-[80px]"
+                    >rt-alpha-video --input ./frames --fps 30</code
+                  >
+                </div>
+              </div>
+            </div>
+
+            <button
+              id="copyBtn"
+              onclick="copyCommand()"
+              class="w-full bg-brand hover:bg-[#ffe16b] text-slate-950 font-bold py-3 px-4 rounded-lg shadow-[0_0_25px_-5px_rgba(255,214,50,0.3)] transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                />
+              </svg>
+              <span id="copyText">Copy Command</span>
+            </button>
+          </div>
+
+          <div
+            class="border border-slate-800 rounded-xl overflow-hidden bg-slate-900/30"
+          >
+            <div
+              class="bg-slate-850/50 px-4 py-3 border-b border-slate-800 flex items-center justify-between"
+            >
+              <h3
+                class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+              >
+                Sequence Preview
+              </h3>
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                  <div
+                    class="w-2 h-2 rounded-full bg-slate-600 transition-colors"
+                    id="previewStatusDot"
+                  ></div>
+                  <span
+                    class="text-[10px] font-mono text-slate-500"
+                    id="previewStatusText"
+                    >Idle</span
+                  >
+                </div>
+
+                <button
+                  id="playPauseBtn"
+                  onclick="togglePlayPause()"
+                  class="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  disabled
+                >
+                  <svg
+                    id="playIcon"
+                    class="w-4 h-4 hidden"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  <svg
+                    id="pauseIcon"
+                    class="w-4 h-4 hidden"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="relative w-full aspect-video canvas-bg flex items-center justify-center overflow-hidden"
+            >
+              <canvas
+                id="previewCanvas"
+                class="max-w-full max-h-full object-contain"
+              ></canvas>
+
+              <div
+                id="previewOverlay"
+                class="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-medium bg-slate-950/20 backdrop-blur-sm"
+              >
+                Drop folder to preview
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer
+      class="border-t border-slate-900 py-8 text-center text-slate-600 text-sm"
+    >
+      <p>
+        Helper tool for
+        <span class="text-slate-400 font-medium">rt-alpha-video</span> CLI.
+      </p>
+      <p
+        class="mt-2 text-xs flex items-center justify-center gap-1.5 text-slate-500"
+      >
+        Powered by
+        <a
+          href="https://github.com/Rethink-JS"
+          target="_blank"
+          class="font-bold text-slate-400 hover:text-brand transition-colors duration-200"
+        >
+          Rethink JS
+        </a>
+      </p>
+    </footer>
+
+    <script>
+      // --- UI Logic ---
+      function toggleAdvanced() {
+        const content = document.getElementById("advancedOptions");
+        const icon = document.getElementById("advancedIcon");
+
+        if (content.classList.contains("hidden")) {
+          content.classList.remove("hidden");
+          icon.classList.add("rotate-180");
+        } else {
+          content.classList.add("hidden");
+          icon.classList.remove("rotate-180");
+        }
+      }
+
+      // --- Core Generation Logic ---
+      const inputs = [
+        "inputPath",
+        "fps",
+        "outputPath",
+        "baseName",
+        "pattern",
+        "startNum",
+        "endNum",
+        "webmQuality",
+        "hevcQuality",
+        "noHevc",
+        "quietMode",
+      ];
+
+      inputs.forEach((id) => {
+        document.getElementById(id).addEventListener("input", generate);
+      });
+
+      // Updated for Specific Defaults (50 / 90)
+      function updateSliderLabel(id, valDisplayId, defaultVal) {
+        const el = document.getElementById(id);
+        const val = parseInt(el.value);
+        const display = document.getElementById(valDisplayId);
+
+        if (val === defaultVal) {
+          display.innerText = `Default (${val})`;
+          display.classList.add("text-slate-500");
+          display.classList.remove("text-brand");
+        } else {
+          display.innerText = val;
+          display.classList.remove("text-slate-500");
+          display.classList.add("text-brand");
+        }
+      }
+
+      function calculateDuration() {
+        const fps = parseInt(document.getElementById("fps").value) || 30;
+        const startVal = parseInt(document.getElementById("startNum").value);
+        const endVal = parseInt(document.getElementById("endNum").value);
+
+        const display = document.getElementById("durationEst");
+
+        if (!isNaN(startVal) && !isNaN(endVal) && endVal >= startVal) {
+          const count = endVal - startVal + 1;
+          const sec = (count / fps).toFixed(2);
+          display.innerText = `~${sec}s duration`;
+        } else {
+          display.innerText = "";
+        }
+      }
+
+      function generate() {
+        // Update UI Labels looking for defaults 50 and 90
+        updateSliderLabel("webmQuality", "webmVal", 50);
+        updateSliderLabel("hevcQuality", "hevcVal", 90);
+        calculateDuration();
+
+        let cmd = ["rt-alpha-video"];
+
+        const inputPath = document.getElementById("inputPath").value.trim();
+        const fps = document.getElementById("fps").value.trim();
+        const outputPath = document.getElementById("outputPath").value.trim();
+        const baseName = document.getElementById("baseName").value.trim();
+        const pattern = document.getElementById("pattern").value.trim();
+        const startNum = document.getElementById("startNum").value.trim();
+        const endNum = document.getElementById("endNum").value.trim();
+
+        const webmQ = parseInt(document.getElementById("webmQuality").value);
+        const hevcQ = parseInt(document.getElementById("hevcQuality").value);
+        const noHevc = document.getElementById("noHevc").checked;
+        const quiet = document.getElementById("quietMode").checked;
+
+        cmd.push(`--input "${inputPath || "./frames"}"`);
+        cmd.push(`--fps ${fps || "30"}`);
+
+        if (outputPath) cmd.push(`--output "${outputPath}"`);
+        if (pattern) cmd.push(`--pattern "${pattern}"`);
+
+        if (startNum !== "" && startNum !== "0")
+          cmd.push(`--start ${startNum}`);
+        if (endNum !== "") cmd.push(`--end ${endNum}`);
+
+        if (baseName) cmd.push(`--name "${baseName}"`);
+
+        // Omit flags if they match the defaults (50 and 90)
+        if (webmQ !== 50) cmd.push(`--webm-quality ${webmQ}`);
+        if (hevcQ !== 90) cmd.push(`--hevc-quality ${hevcQ}`);
+
+        if (noHevc) cmd.push("--no-hevc");
+        if (quiet) cmd.push("--quiet");
+
+        const cmdString = cmd.join(" ");
+        document.getElementById("cmdOutput").innerText = cmdString;
+      }
+
+      function copyCommand() {
+        const text = document.getElementById("cmdOutput").innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById("copyBtn");
+          const label = document.getElementById("copyText");
+          const originalText = label.innerText;
+
+          label.innerText = "Copied!";
+          btn.classList.remove("bg-brand", "text-slate-950");
+          btn.classList.add("bg-green-500", "text-white");
+
+          setTimeout(() => {
+            label.innerText = originalText;
+            btn.classList.add("bg-brand", "text-slate-950");
+            btn.classList.remove("bg-green-500", "text-white");
+          }, 2000);
+        });
+      }
+
+      // --- Drop & Click Zone Logic ---
+      const dropZone = document.getElementById("dropZone");
+      const folderInput = document.getElementById("folderInput");
+      const analysisResult = document.getElementById("analysisResult");
+      const analysisText = document.getElementById("analysisText");
+
+      // Preview Globals
+      let filesDictionary = {}; // Map: "Frame_001.png" -> File Object
+      let animationId = null;
+      let isPlaying = false;
+      let currentFrameIndex = 0; // Tracks playhead position
+
+      // Click Handler
+      function triggerFileSelect() {
+        folderInput.click();
+      }
+
+      // Handle File Input Change (Click selection)
+      folderInput.addEventListener("change", (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const firstFile = files[0];
+        const relativePath = firstFile.webkitRelativePath;
+        const parts = relativePath.split("/");
+        const folderName = parts.length > 1 ? parts[0] : "frames";
+
+        // Convert array to dictionary for preview, store only PNGs
+        filesDictionary = {};
+        const pngFiles = [];
+
+        files.forEach((f) => {
+          if (f.name.toLowerCase().endsWith(".png")) {
+            pngFiles.push(f.name);
+            filesDictionary[f.name] = f;
+          }
+        });
+
+        processFiles(pngFiles, folderName);
+      });
+
+      // Handle Drag & Drop
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, highlight, false);
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight() {
+        dropZone.classList.add("drag-active");
+      }
+      function unhighlight() {
+        dropZone.classList.remove("drag-active");
+      }
+
+      dropZone.addEventListener("drop", handleDrop, false);
+
+      function handleDrop(e) {
+        const items = e.dataTransfer.items;
+        if (!items) return;
+
+        const entry = items[0].webkitGetAsEntry();
+        if (entry && entry.isDirectory) {
+          scanDirectory(entry);
+        } else {
+          alert("Please drop a folder containing your PNG frames.");
+        }
+      }
+
+      function scanDirectory(dirEntry) {
+        const dirReader = dirEntry.createReader();
+        const pngFiles = [];
+        filesDictionary = {};
+
+        const readBatch = () => {
+          dirReader.readEntries((entries) => {
+            if (entries.length === 0) {
+              processFiles(pngFiles, dirEntry.name);
+            } else {
+              // Need to process these entries to get actual File objects
+              let processedCount = 0;
+              const totalInBatch = entries.length;
+
+              entries.forEach((entry) => {
+                if (entry.isFile && entry.name.toLowerCase().endsWith(".png")) {
+                  entry.file((file) => {
+                    pngFiles.push(entry.name);
+                    filesDictionary[entry.name] = file;
+
+                    processedCount++;
+                    if (processedCount === totalInBatch) readBatch();
+                  });
+                } else {
+                  processedCount++;
+                  if (processedCount === totalInBatch) readBatch();
+                }
+              });
+            }
+          });
+        };
+        readBatch();
+      }
+
+      function detectFPS(total) {
+        const candidates = [60, 50, 48, 30, 25, 24];
+        for (let fps of candidates) {
+          if (total % fps === 0) {
+            return fps;
+          }
+        }
+        return null;
+      }
+
+      function processFiles(files, folderName) {
+        if (files.length === 0) {
+          alert("No PNG files found in this folder.");
+          return;
+        }
+
+        files.sort();
+        const totalFrames = files.length;
+        const firstFile = files[0];
+
+        // 1. Detect Pattern
+        const match = firstFile.match(/^(.*?)(\d+)\.png$/i);
+
+        if (match) {
+          const base = match[1];
+          const num = match[2];
+          const width = num.length;
+          const patternStr = base + "%0" + width + "d.png";
+          const startN = parseInt(num, 10);
+          const endN = startN + totalFrames - 1;
+
+          document.getElementById("pattern").value = patternStr;
+          document.getElementById("startNum").value = startN;
+          document
+            .getElementById("patternAutoBadge")
+            .classList.remove("opacity-0");
+          document
+            .getElementById("startAutoBadge")
+            .classList.remove("opacity-0");
+          document.getElementById("endNum").value = endN;
+          document.getElementById("endAutoBadge").classList.remove("opacity-0");
+
+          // Initialize playhead
+          currentFrameIndex = startN;
+        }
+
+        // 2. Set Path & Base Name
+        document.getElementById("inputPath").value = "./" + folderName;
+        document.getElementById("pathWarning").classList.remove("hidden");
+        document.getElementById("baseName").value = folderName;
+        document.getElementById("nameAutoBadge").classList.remove("opacity-0");
+
+        // 3. Auto-detect FPS
+        const detectedFps = detectFPS(totalFrames);
+        const fpsInput = document.getElementById("fps");
+        const fpsBadge = document.getElementById("fpsAutoBadge");
+
+        if (detectedFps) {
+          fpsInput.value = detectedFps;
+          fpsBadge.classList.remove("opacity-0");
+        } else {
+          fpsBadge.classList.add("opacity-0");
+        }
+
+        // 4. Show Success State
+        analysisResult.classList.remove("hidden");
+        analysisText.innerText = `Found ${totalFrames} frames in "${folderName}"`;
+
+        generate();
+        startPreview();
+      }
+
+      function resetDrop() {
+        stopPreview();
+        filesDictionary = {};
+        analysisResult.classList.add("hidden");
+        document.getElementById("patternAutoBadge").classList.add("opacity-0");
+        document.getElementById("startAutoBadge").classList.add("opacity-0");
+        document.getElementById("endAutoBadge").classList.add("opacity-0");
+        document.getElementById("nameAutoBadge").classList.add("opacity-0");
+        document.getElementById("fpsAutoBadge").classList.add("opacity-0");
+        folderInput.value = "";
+      }
+
+      // --- Preview Logic ---
+      function formatFilename(pattern, num) {
+        return pattern.replace(/%0(\d+)d/, (match, width) => {
+          return String(num).padStart(width, "0");
+        });
+      }
+
+      function updatePlayPauseIcon(playing) {
+        const btn = document.getElementById("playPauseBtn");
+        const playIcon = document.getElementById("playIcon");
+        const pauseIcon = document.getElementById("pauseIcon");
+
+        btn.disabled = false;
+        if (playing) {
+          playIcon.classList.add("hidden");
+          pauseIcon.classList.remove("hidden");
+        } else {
+          playIcon.classList.remove("hidden");
+          pauseIcon.classList.add("hidden");
+        }
+      }
+
+      function togglePlayPause() {
+        isPlaying = !isPlaying;
+        updatePlayPauseIcon(isPlaying);
+      }
+
+      function stopPreview() {
+        isPlaying = false;
+        if (animationId) cancelAnimationFrame(animationId);
+        const ctx = document.getElementById("previewCanvas").getContext("2d");
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        document.getElementById("previewOverlay").classList.remove("hidden");
+        document
+          .getElementById("previewStatusDot")
+          .classList.remove("bg-green-500");
+        document
+          .getElementById("previewStatusDot")
+          .classList.add("bg-slate-600");
+        document.getElementById("previewStatusText").innerText = "Idle";
+
+        // Disable button
+        document.getElementById("playPauseBtn").disabled = true;
+        document.getElementById("playIcon").classList.add("hidden");
+        document.getElementById("pauseIcon").classList.add("hidden");
+      }
+
+      function startPreview() {
+        // Reset overlay and status
+        document.getElementById("previewOverlay").classList.add("hidden");
+        document
+          .getElementById("previewStatusDot")
+          .classList.remove("bg-slate-600");
+        document
+          .getElementById("previewStatusDot")
+          .classList.add("bg-green-500");
+
+        // Set Initial State
+        isPlaying = true;
+        updatePlayPauseIcon(true);
+
+        // Sync currentFrameIndex with Start input
+        const startNum =
+          parseInt(document.getElementById("startNum").value) || 0;
+        currentFrameIndex = startNum;
+
+        const canvas = document.getElementById("previewCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let then = Date.now();
+        let canvasInitialized = false;
+
+        function animate() {
+          animationId = requestAnimationFrame(animate);
+
+          // If paused, skip drawing but keep loop alive (or could cancel frame)
+          if (!isPlaying) return;
+
+          const fps = parseInt(document.getElementById("fps").value) || 30;
+          const pattern = document.getElementById("pattern").value;
+          const startNum =
+            parseInt(document.getElementById("startNum").value) || 0;
+          const endNum = parseInt(document.getElementById("endNum").value) || 0;
+
+          const now = Date.now();
+          const elapsed = now - then;
+          const interval = 1000 / fps;
+
+          if (elapsed > interval) {
+            then = now - (elapsed % interval);
+
+            // Logic to loop
+            if (currentFrameIndex > endNum) currentFrameIndex = startNum;
+
+            document.getElementById(
+              "previewStatusText"
+            ).innerText = `Frame ${currentFrameIndex}`;
+
+            const filename = formatFilename(pattern, currentFrameIndex);
+            const file = filesDictionary[filename];
+
+            if (file) {
+              const img = new Image();
+              const objectUrl = URL.createObjectURL(file);
+
+              img.onload = () => {
+                if (!canvasInitialized) {
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  canvasInitialized = true;
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(objectUrl);
+              };
+              img.src = objectUrl;
+            }
+
+            currentFrameIndex++;
+          }
+        }
+
+        if (animationId) cancelAnimationFrame(animationId);
+        animate();
+      }
+
+      generate();
+    </script>
+  </body>
+</html>
