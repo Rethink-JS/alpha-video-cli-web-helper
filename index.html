@@ -266,18 +266,33 @@
                 class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:border-brand/70 focus:ring-1 focus:ring-brand/70 transition-all font-mono text-sm placeholder:text-slate-700"
               />
 
-              <p class="text-xs text-slate-500 leading-relaxed mt-1">
-                <span class="text-brand font-bold">Important:</span> For
-                security, browsers cannot see the full system path. We've
-                auto-filled the relative folder name, but you must ensure this
-                matches your actual path.
-                <br />
-                <span class="text-slate-400 mt-1 block"
-                  >💡 <span class="font-semibold text-slate-300">Tip:</span> To
-                  get the absolute path, simply drag and drop your folder
-                  directly into your terminal window.</span
-                >
-              </p>
+              <div
+                class="text-xs text-slate-500 leading-relaxed mt-2 space-y-2"
+              >
+                <p>
+                  <span class="text-brand font-bold">Important:</span> For
+                  security, browsers cannot see the full system path. Please
+                  ensure the path above matches your actual folder location.
+                </p>
+
+                <div class="pl-2 border-l-2 border-slate-800 space-y-1">
+                  <p>
+                    <span class="text-slate-300 font-medium">Finder:</span>
+                    Hold
+                    <kbd
+                      class="font-mono bg-slate-800 px-1 py-0.5 rounded text-[10px] border border-slate-700 text-slate-400"
+                      >Option ⌥</kbd
+                    >
+                    + Right-click your folder, then select
+                    <span class="text-slate-300">"Copy ... as Pathname"</span>.
+                  </p>
+                  <p>
+                    <span class="text-slate-300 font-medium">Terminal:</span>
+                    Or simply drag and drop the folder directly into the
+                    terminal window.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
