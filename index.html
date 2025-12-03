@@ -24,8 +24,8 @@
                 950: "#020617",
               },
               brand: {
-                DEFAULT: "#FFD632", // Rethink JS Brand Color
-                dim: "#b39005", // Darker shade for accents
+                DEFAULT: "#FFD632",
+                dim: "#b39005",
                 glow: "rgba(255, 214, 50, 0.15)",
               },
             },
@@ -37,7 +37,6 @@
       };
     </script>
     <style>
-      /* Custom range slider styling matching brand color */
       input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
         height: 16px;
@@ -66,7 +65,6 @@
       .rotate-180 {
         transform: rotate(180deg);
       }
-      /* Canvas checkerboard background for alpha transparency */
       .canvas-bg {
         background-color: #0f172a;
         background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%),
@@ -729,11 +727,9 @@
     </footer>
 
     <script>
-      // --- UI Logic ---
       function toggleAdvanced() {
         const content = document.getElementById("advancedOptions");
         const icon = document.getElementById("advancedIcon");
-
         if (content.classList.contains("hidden")) {
           content.classList.remove("hidden");
           icon.classList.add("rotate-180");
@@ -743,7 +739,6 @@
         }
       }
 
-      // --- Core Generation Logic ---
       const inputs = [
         "inputPath",
         "fps",
@@ -766,7 +761,6 @@
         const el = document.getElementById(id);
         const val = parseInt(el.value);
         const display = document.getElementById(valDisplayId);
-
         if (val === defaultVal) {
           display.innerText = `Default (${val})`;
           display.classList.add("text-slate-500");
@@ -782,9 +776,7 @@
         const fps = parseInt(document.getElementById("fps").value) || 30;
         const startVal = parseInt(document.getElementById("startNum").value);
         const endVal = parseInt(document.getElementById("endNum").value);
-
         const display = document.getElementById("durationEst");
-
         if (!isNaN(startVal) && !isNaN(endVal) && endVal >= startVal) {
           const count = endVal - startVal + 1;
           const sec = (count / fps).toFixed(2);
@@ -798,9 +790,7 @@
         updateSliderLabel("webmQuality", "webmVal", 50);
         updateSliderLabel("hevcQuality", "hevcVal", 90);
         calculateDuration();
-
         let cmd = ["rt-alpha-video"];
-
         const inputPath = document.getElementById("inputPath").value.trim();
         const fps = document.getElementById("fps").value.trim();
         const outputPath = document.getElementById("outputPath").value.trim();
@@ -808,30 +798,22 @@
         const pattern = document.getElementById("pattern").value.trim();
         const startNum = document.getElementById("startNum").value.trim();
         const endNum = document.getElementById("endNum").value.trim();
-
         const webmQ = parseInt(document.getElementById("webmQuality").value);
         const hevcQ = parseInt(document.getElementById("hevcQuality").value);
         const noHevc = document.getElementById("noHevc").checked;
         const quiet = document.getElementById("quietMode").checked;
-
         cmd.push(`--input "${inputPath || "./frames"}"`);
         cmd.push(`--fps ${fps || "30"}`);
-
         if (outputPath) cmd.push(`--output "${outputPath}"`);
         if (pattern) cmd.push(`--pattern "${pattern}"`);
-
         if (startNum !== "" && startNum !== "0")
           cmd.push(`--start ${startNum}`);
         if (endNum !== "") cmd.push(`--end ${endNum}`);
-
         if (baseName) cmd.push(`--name "${baseName}"`);
-
         if (webmQ !== 50) cmd.push(`--webm-quality ${webmQ}`);
         if (hevcQ !== 90) cmd.push(`--hevc-quality ${hevcQ}`);
-
         if (noHevc) cmd.push("--no-hevc");
         if (quiet) cmd.push("--quiet");
-
         const cmdString = cmd.join(" ");
         document.getElementById("cmdOutput").innerText = cmdString;
       }
@@ -842,11 +824,9 @@
           const btn = document.getElementById("copyBtn");
           const label = document.getElementById("copyText");
           const originalText = label.innerText;
-
           label.innerText = "Copied!";
           btn.classList.remove("bg-brand", "text-slate-950");
           btn.classList.add("bg-green-500", "text-white");
-
           setTimeout(() => {
             label.innerText = originalText;
             btn.classList.add("bg-brand", "text-slate-950");
@@ -855,48 +835,39 @@
         });
       }
 
-      // --- Drop & Click Zone Logic ---
       const dropZone = document.getElementById("dropZone");
       const folderInput = document.getElementById("folderInput");
       const analysisResult = document.getElementById("analysisResult");
       const analysisText = document.getElementById("analysisText");
       const alphaWarning = document.getElementById("alphaWarning");
 
-      // Preview Globals
       let filesDictionary = {};
       let animationId = null;
       let isPlaying = false;
       let currentFrameIndex = 0;
 
-      // Click Handler
       function triggerFileSelect() {
         folderInput.click();
       }
 
-      // Handle File Input Change (Click selection)
       folderInput.addEventListener("change", (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
-
         const firstFile = files[0];
         const relativePath = firstFile.webkitRelativePath;
         const parts = relativePath.split("/");
         const folderName = parts.length > 1 ? parts[0] : "frames";
-
         filesDictionary = {};
         const pngFiles = [];
-
         files.forEach((f) => {
           if (f.name.toLowerCase().endsWith(".png")) {
             pngFiles.push(f.name);
             filesDictionary[f.name] = f;
           }
         });
-
         processFiles(pngFiles, folderName);
       });
 
-      // Handle Drag & Drop
       ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
         dropZone.addEventListener(eventName, preventDefaults, false);
       });
@@ -917,6 +888,7 @@
       function highlight() {
         dropZone.classList.add("drag-active");
       }
+
       function unhighlight() {
         dropZone.classList.remove("drag-active");
       }
@@ -926,7 +898,6 @@
       function handleDrop(e) {
         const items = e.dataTransfer.items;
         if (!items) return;
-
         const entry = items[0].webkitGetAsEntry();
         if (entry && entry.isDirectory) {
           scanDirectory(entry);
@@ -939,7 +910,6 @@
         const dirReader = dirEntry.createReader();
         const pngFiles = [];
         filesDictionary = {};
-
         const readBatch = () => {
           dirReader.readEntries((entries) => {
             if (entries.length === 0) {
@@ -947,13 +917,11 @@
             } else {
               let processedCount = 0;
               const totalInBatch = entries.length;
-
               entries.forEach((entry) => {
                 if (entry.isFile && entry.name.toLowerCase().endsWith(".png")) {
                   entry.file((file) => {
                     pngFiles.push(entry.name);
                     filesDictionary[entry.name] = file;
-
                     processedCount++;
                     if (processedCount === totalInBatch) readBatch();
                   });
@@ -968,31 +936,24 @@
         readBatch();
       }
 
-      // New Function: Check for Alpha Channel
       function checkTransparency(file) {
         return new Promise((resolve) => {
           const img = new Image();
           const url = URL.createObjectURL(file);
           img.onload = () => {
-            // Create small offscreen canvas
             const c = document.createElement("canvas");
             c.width = img.width;
             c.height = img.height;
             const ctx = c.getContext("2d");
             ctx.drawImage(img, 0, 0);
-
             const imageData = ctx.getImageData(0, 0, c.width, c.height).data;
             let hasAlpha = false;
-
-            // Check alpha channel (every 4th byte).
-            // Optimization: Stride by 4 pixels (16 bytes) to speed up large files
             for (let i = 3; i < imageData.length; i += 16) {
               if (imageData[i] < 255) {
                 hasAlpha = true;
                 break;
               }
             }
-
             URL.revokeObjectURL(url);
             resolve(hasAlpha);
           };
@@ -1019,8 +980,9 @@
         files.sort();
         const totalFrames = files.length;
         const firstFile = files[0];
+        const lastFile = files[files.length - 1];
 
-        // Check transparency of the first file
+        alphaWarning.classList.add("hidden");
         const firstFileObj = filesDictionary[firstFile];
         if (firstFileObj) {
           const hasAlpha = await checkTransparency(firstFileObj);
@@ -1029,38 +991,125 @@
           }
         }
 
-        // 1. Detect Pattern
-        const match = firstFile.match(/^(.*?)(\d+)\.png$/i);
+        let patternStr = "";
+        let startN = 0;
 
-        if (match) {
-          const base = match[1];
-          const num = match[2];
-          const width = num.length;
-          const patternStr = base + "%0" + width + "d.png";
-          const startN = parseInt(num, 10);
+        const dotIndexFirst = firstFile.lastIndexOf(".");
+        const ext = dotIndexFirst !== -1 ? firstFile.slice(dotIndexFirst) : "";
+        const baseFirst =
+          dotIndexFirst !== -1 ? firstFile.slice(0, dotIndexFirst) : firstFile;
+
+        const dotIndexLast = lastFile.lastIndexOf(".");
+        const baseLast =
+          dotIndexLast !== -1 ? lastFile.slice(0, dotIndexLast) : lastFile;
+
+        const lenFirst = baseFirst.length;
+        const lenLast = baseLast.length;
+        const maxPrefix = Math.min(lenFirst, lenLast);
+
+        let prefixLen = 0;
+        while (
+          prefixLen < maxPrefix &&
+          baseFirst[prefixLen] === baseLast[prefixLen]
+        ) {
+          prefixLen++;
+        }
+
+        let suffixLen = 0;
+        const maxSuffix = Math.min(lenFirst - prefixLen, lenLast - prefixLen);
+        while (
+          suffixLen < maxSuffix &&
+          baseFirst[lenFirst - 1 - suffixLen] ===
+            baseLast[lenLast - 1 - suffixLen]
+        ) {
+          suffixLen++;
+        }
+
+        const prefix = baseFirst.slice(0, prefixLen);
+        const suffix =
+          suffixLen > 0 ? baseFirst.slice(lenFirst - suffixLen) : "";
+
+        const midFirst = baseFirst.slice(prefixLen, lenFirst - suffixLen);
+        const midLast = baseLast.slice(prefixLen, lenLast - suffixLen);
+
+        function getNumericRuns(str) {
+          const regex = /(\d+)/g;
+          const runs = [];
+          let m;
+          while ((m = regex.exec(str)) !== null) {
+            runs.push({ start: m.index, text: m[0] });
+          }
+          return runs;
+        }
+
+        const runsFirst = getNumericRuns(midFirst);
+        const runsLast = getNumericRuns(midLast);
+
+        let chosenIndex = -1;
+        for (let i = 0; i < runsFirst.length; i++) {
+          const r0 = runsFirst[i];
+          const r1 = runsLast[i];
+          if (!r1) continue;
+          if (r0.text !== r1.text) {
+            chosenIndex = i;
+            break;
+          }
+        }
+
+        if (chosenIndex === -1 && runsFirst.length === 1) {
+          chosenIndex = 0;
+        }
+
+        if (chosenIndex === -1) {
+          const regexAll = /(\d+)/g;
+          let lastMatch = null;
+          let m;
+          while ((m = regexAll.exec(baseFirst)) !== null) {
+            lastMatch = m;
+          }
+          if (lastMatch) {
+            const numericStr = lastMatch[0];
+            const width = numericStr.length;
+            startN = parseInt(numericStr, 10);
+            const numIndex = lastMatch.index;
+            const basePrefix = baseFirst.slice(0, numIndex);
+            const baseSuffix = baseFirst.slice(numIndex + width);
+            patternStr = basePrefix + "%0" + width + "d" + baseSuffix + ext;
+          }
+        } else {
+          const run = runsFirst[chosenIndex];
+          const numericStr = run.text;
+          const width = numericStr.length;
+          startN = parseInt(numericStr, 10);
+          const midPattern =
+            midFirst.slice(0, run.start) +
+            "%0" +
+            width +
+            "d" +
+            midFirst.slice(run.start + width);
+          patternStr = prefix + midPattern + suffix + ext;
+        }
+
+        if (patternStr) {
           const endN = startN + totalFrames - 1;
-
           document.getElementById("pattern").value = patternStr;
           document.getElementById("startNum").value = startN;
+          document.getElementById("endNum").value = endN;
           document
             .getElementById("patternAutoBadge")
             .classList.remove("opacity-0");
           document
             .getElementById("startAutoBadge")
             .classList.remove("opacity-0");
-          document.getElementById("endNum").value = endN;
           document.getElementById("endAutoBadge").classList.remove("opacity-0");
-
           currentFrameIndex = startN;
         }
 
-        // 2. Set Path & Base Name
         document.getElementById("inputPath").value = "./" + folderName;
         document.getElementById("pathWarning").classList.remove("hidden");
         document.getElementById("baseName").value = folderName;
         document.getElementById("nameAutoBadge").classList.remove("opacity-0");
 
-        // 3. Auto-detect FPS
         const detectedFps = detectFPS(totalFrames);
         const fpsInput = document.getElementById("fps");
         const fpsBadge = document.getElementById("fpsAutoBadge");
@@ -1072,7 +1121,6 @@
           fpsBadge.classList.add("opacity-0");
         }
 
-        // 4. Show Success State
         analysisResult.classList.remove("hidden");
         analysisText.innerText = `Found ${totalFrames} frames in "${folderName}"`;
 
@@ -1084,7 +1132,7 @@
         stopPreview();
         filesDictionary = {};
         analysisResult.classList.add("hidden");
-        alphaWarning.classList.add("hidden"); // Hide warning on reset
+        alphaWarning.classList.add("hidden");
         document.getElementById("patternAutoBadge").classList.add("opacity-0");
         document.getElementById("startAutoBadge").classList.add("opacity-0");
         document.getElementById("endAutoBadge").classList.add("opacity-0");
@@ -1093,7 +1141,6 @@
         folderInput.value = "";
       }
 
-      // --- Preview Logic ---
       function formatFilename(pattern, num) {
         return pattern.replace(/%0(\d+)d/, (match, width) => {
           return String(num).padStart(width, "0");
@@ -1104,7 +1151,6 @@
         const btn = document.getElementById("playPauseBtn");
         const playIcon = document.getElementById("playIcon");
         const pauseIcon = document.getElementById("pauseIcon");
-
         btn.disabled = false;
         if (playing) {
           playIcon.classList.add("hidden");
@@ -1133,7 +1179,6 @@
           .getElementById("previewStatusDot")
           .classList.add("bg-slate-600");
         document.getElementById("previewStatusText").innerText = "Idle";
-
         document.getElementById("playPauseBtn").disabled = true;
         document.getElementById("playIcon").classList.add("hidden");
         document.getElementById("pauseIcon").classList.add("hidden");
@@ -1147,51 +1192,38 @@
         document
           .getElementById("previewStatusDot")
           .classList.add("bg-green-500");
-
         isPlaying = true;
         updatePlayPauseIcon(true);
-
         const startNum =
           parseInt(document.getElementById("startNum").value) || 0;
         currentFrameIndex = startNum;
-
         const canvas = document.getElementById("previewCanvas");
         const ctx = canvas.getContext("2d");
-
         let then = Date.now();
         let canvasInitialized = false;
 
         function animate() {
           animationId = requestAnimationFrame(animate);
-
           if (!isPlaying) return;
-
           const fps = parseInt(document.getElementById("fps").value) || 30;
           const pattern = document.getElementById("pattern").value;
-          const startNum =
+          const startNumLocal =
             parseInt(document.getElementById("startNum").value) || 0;
           const endNum = parseInt(document.getElementById("endNum").value) || 0;
-
           const now = Date.now();
           const elapsed = now - then;
           const interval = 1000 / fps;
-
           if (elapsed > interval) {
             then = now - (elapsed % interval);
-
-            if (currentFrameIndex > endNum) currentFrameIndex = startNum;
-
+            if (currentFrameIndex > endNum) currentFrameIndex = startNumLocal;
             document.getElementById(
               "previewStatusText"
             ).innerText = `Frame ${currentFrameIndex}`;
-
             const filename = formatFilename(pattern, currentFrameIndex);
             const file = filesDictionary[filename];
-
             if (file) {
               const img = new Image();
               const objectUrl = URL.createObjectURL(file);
-
               img.onload = () => {
                 if (!canvasInitialized) {
                   canvas.width = img.width;
@@ -1204,7 +1236,6 @@
               };
               img.src = objectUrl;
             }
-
             currentFrameIndex++;
           }
         }
