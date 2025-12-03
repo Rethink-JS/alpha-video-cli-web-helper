@@ -649,7 +649,7 @@
                   <code
                     id="cmdOutput"
                     class="block font-mono text-sm leading-relaxed text-brand break-all whitespace-pre-wrap min-h-[80px]"
-                    >rt-alpha-video --input ./frames --fps 30</code
+                    >npm install -g @rethink-js/alpha-video-cli</code
                   >
                 </div>
               </div>
@@ -658,7 +658,7 @@
             <button
               id="copyBtn"
               onclick="copyCommand()"
-              class="w-full bg-brand hover:bg-[#ffe16b] text-slate-950 font-bold py-3 px-4 rounded-lg shadow-[0_0_25px_-5px_rgba(255,214,50,0.3)] transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+              class="w-full bg-brand hover:bg-[#ffe16b] text-slate-950 font-bold py-3 px-4 rounded-lg shadow-[0_0_25px_-5px_rgba(255,214,50,0.3)] transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none disabled:hover:bg-slate-800 disabled:transform-none"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -674,7 +674,7 @@
                   d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
                 />
               </svg>
-              <span id="copyText">Copy Command</span>
+              <span id="copyText">Install Package First</span>
             </button>
           </div>
 
@@ -859,10 +859,15 @@
         }
       }
 
+      let isFolderLoaded = false;
+
       function generate() {
         updateSliderLabel("webmQuality", "webmVal", 50);
         updateSliderLabel("hevcQuality", "hevcVal", 90);
         calculateDuration();
+
+        if (!isFolderLoaded) return;
+
         let cmd = ["rt-alpha-video"];
         const inputPath = document.getElementById("inputPath").value.trim();
         const fps = document.getElementById("fps").value.trim();
@@ -898,12 +903,24 @@
           const label = document.getElementById("copyText");
           const originalText = label.innerText;
           label.innerText = "Copied!";
-          btn.classList.remove("bg-brand", "text-slate-950");
-          btn.classList.add("bg-green-500", "text-white");
+          btn.classList.remove(
+            "bg-brand",
+            "text-slate-950",
+            "hover:bg-[#ffe16b]"
+          );
+          btn.classList.add("bg-green-500", "text-white", "hover:bg-green-500");
           setTimeout(() => {
             label.innerText = originalText;
-            btn.classList.add("bg-brand", "text-slate-950");
-            btn.classList.remove("bg-green-500", "text-white");
+            btn.classList.remove(
+              "bg-green-500",
+              "text-white",
+              "hover:bg-green-500"
+            );
+            btn.classList.add(
+              "bg-brand",
+              "text-slate-950",
+              "hover:bg-[#ffe16b]"
+            );
           }, 2000);
         });
       }
@@ -1242,6 +1259,11 @@
         analysisResult.classList.remove("hidden");
         analysisText.innerText = `Found ${totalFrames} frames in "${folderName}"`;
 
+        isFolderLoaded = true;
+        const btn = document.getElementById("copyBtn");
+        btn.disabled = false;
+        document.getElementById("copyText").innerText = "Copy Command";
+
         generate();
         startPreview();
       }
@@ -1259,6 +1281,13 @@
         document.getElementById("nameAutoBadge").classList.add("opacity-0");
         document.getElementById("fpsAutoBadge").classList.add("opacity-0");
         folderInput.value = "";
+
+        isFolderLoaded = false;
+        const btn = document.getElementById("copyBtn");
+        btn.disabled = false;
+        document.getElementById("copyText").innerText = "Install Package First";
+        document.getElementById("cmdOutput").innerText =
+          "npm install -g @rethink-js/alpha-video-cli";
       }
 
       function formatFilename(pattern, num) {
@@ -1356,7 +1385,6 @@
               };
               img.src = objectUrl;
             } else {
-              // If frame is missing during playback, just skip or clear
             }
             currentFrameIndex++;
           }
